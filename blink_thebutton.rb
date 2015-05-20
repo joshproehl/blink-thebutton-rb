@@ -14,34 +14,31 @@ LIFX_IDENTIFIER = "" # Set the identifier of the bulb you want to use. "label:De
 def rgbForSeconds(s)
   case s
   when 1..10
-    return [229, 0, 0]
+    return {r: 229, g: 0, b: 0}
   when 11..20
-    return [229, 149, 0]
+    return {r: 229, g: 149, b: 0}
   when 21..30
-    return [229, 217, 0]
+    return {r: 229, g: 217, b: 0}
   when 31..40
-    return [2, 190, 1]
+    return {r: 2, g: 190, b: 1}
   when 41..50
-    return [0, 50, 199]
+    return {r: 0, g: 50, b: 199}
   when 51..60
-    return [130, 0, 128]
+    return {r: 130, g: 0, b: 128}
   else
-    return [255, 255, 255]
+    return {r: 255, g: 255, b: 255}
   end
 end
 
 
-def fadeLightForButtonSeconds(light, seconds)
-  color = rgbForSeconds(seconds)
-  light.fade_to_rgb(2000, color[0], color[1], color[2])
+def fadeButtonTo(light, color)
+  light.fade_to_rgb(2000, color[:r], color[:g], color[:b])
 end
 
 
-def setLifx(seconds)
-  color = rgbForSeconds(seconds)
-
+def setLifx(color)
   auth = {:username => LIFX_TOKEN, :password => ""}
-  data = "color=rgb:#{color[0]},#{color[1]},#{color[2]}"
+  data = "color=rgb:#{color[:r]},#{color[:g]},#{color[:b]}"
 
   begin
     putRes = HTTParty.put("https://api.lifx.com/v1beta1/lights/#{URI::escape(LIFX_IDENTIFIER)}/color", :body => data, :basic_auth => auth)
@@ -62,7 +59,9 @@ begin
   b = Blink1.new
   b.open
 
-  fadeLightForButtonSeconds(b, 0)
+  rgb = rgbForSeconds(0)
+
+  fadeButtonTo(b, rgb)
 
   response = HTTParty.get('http://cors-unblocker.herokuapp.com/get?url='+URI::escape("https://reddit.com/r/thebutton"))
 
@@ -84,10 +83,18 @@ begin
       print "    Current tick: #{seconds_left}             "
       print "\r"
 
-      fadeLightForButtonSeconds(b, seconds_left)
+      newRgb = rgbForSeconds(seconds_left)
 
-      if(LIFX_TOKEN != "" && LIFX_IDENTIFIER != "")
-        setLifx(seconds_left)
+      # Only update the color if the new color is actually different
+      # TODO: This is broken because [1,2,3] - [3,2,1] is empty, which makes it an invaled comparison
+      if rgb != newRgb
+        fadeButtonTo(b, newRgb)
+
+        if(LIFX_TOKEN != "" && LIFX_IDENTIFIER != "")
+          setLifx(newRgb)
+        end
+
+        rgb = newRgb
       end
     end
 

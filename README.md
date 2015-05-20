@@ -9,4 +9,3 @@ This is a simple little tool to monitor The Button (reddit.com/r/thebutton) and 
 Easy!
 
 # Todo
-* Only issue fade commands when they're actually needed? (Rather than every tick)
