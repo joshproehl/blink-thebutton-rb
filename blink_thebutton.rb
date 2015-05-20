@@ -32,6 +32,8 @@ def fadeLightForButtonSeconds(light, seconds)
   light.fade_to_rgb(2000, color[0], color[1], color[2])
 end
 
+# Make sure our printing later gets writter immediately
+STDOUT.sync = true
 
 b = Blink1.new
 b.open
@@ -55,7 +57,8 @@ if response.code == 200
     parsedMsg = JSON.parse(msg.data)
     seconds_left = parsedMsg["payload"]["seconds_left"] - 1 # We're removing one to stay synced with what the website shows
 
-    puts seconds_left
+    print "  Current tick: #{seconds_left}             "
+    print "\r"
 
     fadeLightForButtonSeconds(b, seconds_left)
   end
