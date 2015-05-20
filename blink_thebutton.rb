@@ -6,6 +6,9 @@ require 'uri'
 require 'websocket-client-simple'
 require 'json'
 
+LIFX_TOKEN = "" # Set your LIFX Api token here
+LIFX_IDENTIFIER = "" # Set the identifier of the bulb you want to use. "label:Desk" for example
+
 
 # RGB Values blatantly stolen from http://github.com/nattress/thebutton-hue/blob/master/server.js
 def rgbForSeconds(s)
@@ -31,6 +34,22 @@ end
 def fadeLightForButtonSeconds(light, seconds)
   color = rgbForSeconds(seconds)
   light.fade_to_rgb(2000, color[0], color[1], color[2])
+end
+
+
+def setLifx(seconds)
+  color = rgbForSeconds(seconds)
+
+  auth = {:username => LIFX_TOKEN, :password => ""}
+  data = "color=rgb:#{color[0]},#{color[1]},#{color[2]}"
+
+  begin
+    putRes = HTTParty.put("https://api.lifx.com/v1beta1/lights/#{URI::escape(LIFX_IDENTIFIER)}/color", :body => data, :basic_auth => auth)
+  rescue Exception => e
+    puts e
+  end
+
+  return putRes.code
 end
 
 
@@ -66,6 +85,10 @@ begin
       print "\r"
 
       fadeLightForButtonSeconds(b, seconds_left)
+
+      if(LIFX_TOKEN != "" && LIFX_IDENTIFIER != "")
+        setLifx(seconds_left)
+      end
     end
 
     loop do
