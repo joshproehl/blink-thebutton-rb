@@ -1,0 +1,22 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    event_emitter (0.2.5)
+    httparty (0.13.5)
+      json (~> 1.8)
+      multi_xml (>= 0.5.2)
+    json (1.8.2)
+    multi_xml (0.5.5)
+    rb-blink1 (0.0.7)
+    websocket (1.2.2)
+    websocket-client-simple (0.2.2)
+      event_emitter
+      websocket
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  httparty
+  rb-blink1
+  websocket-client-simple
