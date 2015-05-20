@@ -6,6 +6,7 @@ require 'uri'
 require 'websocket-client-simple'
 require 'json'
 
+
 # RGB Values blatantly stolen from http://github.com/nattress/thebutton-hue/blob/master/server.js
 def rgbForSeconds(s)
   case s
@@ -32,41 +33,48 @@ def fadeLightForButtonSeconds(light, seconds)
   light.fade_to_rgb(2000, color[0], color[1], color[2])
 end
 
-# Make sure our printing later gets writter immediately
-STDOUT.sync = true
 
-b = Blink1.new
-b.open
+begin
+  puts "Press Ctrl-C to exit."
 
-fadeLightForButtonSeconds(b, 0)
+  # Make sure our printing later gets writter immediately
+  STDOUT.sync = true
 
-response = HTTParty.get('http://cors-unblocker.herokuapp.com/get?url='+URI::escape("https://reddit.com/r/thebutton"))
+  b = Blink1.new
+  b.open
 
-# Initial URL blatantly stolen from http://github.com/nattress/thebutton-hue/blob/master/server.js
-# I'm not entirely certain what the initial URL is doing actually, and I don't think it's ever used.
-# wsurl = "wss://wss.redditmedia.com/thebutton?h=7f66bf82878e6151f7688ead7085eb63a0baff0b?e=1428621271"
+  fadeLightForButtonSeconds(b, 0)
 
-if response.code == 200
-  wsurl = /(wss:\/\/wss\.redditmedia\.com\/thebutton\?h=[^"]*)"/.match(response.body)[1]
+  response = HTTParty.get('http://cors-unblocker.herokuapp.com/get?url='+URI::escape("https://reddit.com/r/thebutton"))
 
-  puts "Connecting to websocket: "+wsurl
+  # Initial URL blatantly stolen from http://github.com/nattress/thebutton-hue/blob/master/server.js
+  # I'm not entirely certain what the initial URL is doing actually, and I don't think it's ever used.
+  # wsurl = "wss://wss.redditmedia.com/thebutton?h=7f66bf82878e6151f7688ead7085eb63a0baff0b?e=1428621271"
 
-  ws = WebSocket::Client::Simple.connect wsurl
+  if response.code == 200
+    wsurl = /(wss:\/\/wss\.redditmedia\.com\/thebutton\?h=[^"]*)"/.match(response.body)[1]
 
-  ws.on :message do |msg|
-    parsedMsg = JSON.parse(msg.data)
-    seconds_left = parsedMsg["payload"]["seconds_left"] - 1 # We're removing one to stay synced with what the website shows
+    puts "Connecting to websocket: "+wsurl
 
-    print "  Current tick: #{seconds_left}             "
-    print "\r"
+    ws = WebSocket::Client::Simple.connect wsurl
 
-    fadeLightForButtonSeconds(b, seconds_left)
+    ws.on :message do |msg|
+      parsedMsg = JSON.parse(msg.data)
+      seconds_left = parsedMsg["payload"]["seconds_left"] - 1 # We're removing one to stay synced with what the website shows
+
+      print "    Current tick: #{seconds_left}             "
+      print "\r"
+
+      fadeLightForButtonSeconds(b, seconds_left)
+    end
+
+    loop do
+      ws.send STDIN.gets.strip
+    end
   end
-
-  loop do
-    ws.send STDIN.gets.strip
-  end
+rescue Interrupt
+  print "                                                                    \r"
+  b.off
+  b.close
+  puts "All done."
 end
-
-
-b.close
