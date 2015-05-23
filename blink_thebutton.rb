@@ -31,14 +31,22 @@ def rgbForSeconds(s)
 end
 
 
-def fadeButtonTo(light, color)
-  light.fade_to_rgb(2000, color[:r], color[:g], color[:b])
+def setBlink(light, color, isReset=true)
+  if isReset == true
+    light.set_rgb(color[:r], color[:g], color[:b])
+  else
+    light.fade_to_rgb(2000, color[:r], color[:g], color[:b])
+  end
 end
 
 
-def setLifx(color)
+def setLifx(color, isReset=true)
   auth = {:username => LIFX_TOKEN, :password => ""}
   data = "color=rgb:#{color[:r]},#{color[:g]},#{color[:b]}"
+
+  if isReset == true
+    data = data + ";duration=0"
+  end
 
   begin
     putRes = HTTParty.put("https://api.lifx.com/v1beta1/lights/#{URI::escape(LIFX_IDENTIFIER)}/color", :body => data, :basic_auth => auth)
@@ -61,7 +69,7 @@ begin
 
   rgb = rgbForSeconds(0)
 
-  fadeButtonTo(b, rgb)
+  setBlink(b, rgb)
 
   response = HTTParty.get('http://cors-unblocker.herokuapp.com/get?url='+URI::escape("https://reddit.com/r/thebutton"))
 
@@ -88,10 +96,16 @@ begin
       # Only update the color if the new color is actually different
       # TODO: This is broken because [1,2,3] - [3,2,1] is empty, which makes it an invaled comparison
       if rgb != newRgb
-        fadeButtonTo(b, newRgb)
+        isReset = (seconds_left == 59)
+
+        if isReset # if 60s we'll SNAP to a slightly darker purple so we can tell it clicked.
+          newRgb = {r:25, g:0, b:51}
+        end
+
+        setBlink(b, newRgb, isReset)
 
         if(LIFX_TOKEN != "" && LIFX_IDENTIFIER != "")
-          setLifx(newRgb)
+          setLifx(newRgb, isReset)
         end
 
         rgb = newRgb
